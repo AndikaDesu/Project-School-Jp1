@@ -1,0 +1,189 @@
+@extends('layouts.app')
+
+@section('title', 'Daftar Wisata - Wisata Singkawang')
+
+@section('content')
+    <div class="container py-5">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb bg-transparent p-0 mb-0" style="font-size: 1rem;">
+                <li class="breadcrumb-item"><a href="{{ route('home') }}" class="text-decoration-none text-primary fw-medium">Beranda</a></li>
+                <li class="breadcrumb-item active text-muted fw-semibold" aria-current="page">Wisata</li>
+            </ol>
+        </nav>
+
+        <div class="mb-5 border-start border-primary border-4 ps-3 py-1">
+            <h1 class="display-5 fw-bold text-dark mb-2" style="font-family: 'Syne', sans-serif;">Daftar Wisata Singkawang</h1>
+            <p class="text-secondary lead mb-0" style="font-size: 1.15rem;">Temukan ragam pesona alam, budaya, dan tempat rekreasi terbaik di Kota Singkawang.</p>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" style="overflow: visible;">
+            <form action="{{ route('wisata.index') }}" method="GET" id="searchForm">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-6 col-md-10 position-relative">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted px-3"><i class="fas fa-search fs-5"></i></span>
+                            <input type="text" name="search" id="searchInput" autocomplete="off" class="form-control bg-light border-start-0 py-3 ps-1" style="font-size: 1.05rem;" placeholder="Ketik nama tempat atau lokasi wisata..." value="{{ request('search') }}">
+                        </div>
+                        <div id="suggestionBox" class="list-group position-absolute w-100 shadow-lg d-none" style="z-index: 9999; max-height: 250px; overflow-y: auto; margin-top: 5px; border-radius: 8px;"></div>
+                    </div>
+
+                    @if(isset($categories) && $categories->count() > 0)
+                    <div class="col-lg-3 col-md-6">
+                        <select name="kategori" class="form-select bg-light py-3" style="font-size: 1.05rem;" onchange="this.form.submit()">
+                            <option value="">-- Semua Kategori --</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->slug }}" {{ request('kategori') == $cat->slug ? 'selected' : '' }}>
+                                    {{ $cat->nama }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
+                    <div class="col-lg-3 col-md-6 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary py-3 px-4 fw-bold w-100 shadow-sm" style="font-size: 1rem;"><i class="fas fa-sliders me-1"></i> Cari Data</button>
+                        @if(request('search') || request('kategori'))
+                            <a href="{{ route('wisata.index') }}" class="btn btn-secondary py-3 px-3 fw-semibold"><i class="fas fa-arrow-rotate-left"></i></a>
+                        @endif
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        @if(request('search'))
+            <div class="alert alert-light border shadow-sm rounded-3 py-3 px-4 mb-4 d-flex align-items-center justify-content-between">
+                <span class="text-dark" style="font-size: 1.05rem;">Menampilkan hasil pencarian untuk kata kunci: <strong class="text-danger">"{{ request('search') }}"</strong></span>
+                <a href="{{ route('wisata.index') }}" class="text-decoration-none small fw-bold text-primary">Hapus Pencarian</a>
+            </div>
+        @endif
+
+        <div class="row g-4 mb-4">
+            @forelse($wisatas as $wisata)
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative card-hover-animation" style="background: #ffffff;">
+                        <div class="position-relative overflow-hidden" style="height: 240px;">
+                            @if($wisata->gambar)
+                                <img src="{{ asset('storage/' . $wisata->gambar) }}" class="w-100 h-100 img-zoom-effect" style="object-fit: cover;" alt="{{ $wisata->nama }}">
+                            @else
+                                <div class="w-100 h-100 bg-light d-flex flex-column align-items-center justify-content-center text-muted border-bottom">
+                                    <i class="fas fa-image fa-3x mb-2 opacity-50"></i>
+                                    <span class="small italic">Foto belum tersedia</span>
+                                </div>
+                            @endif
+                            <div class="position-absolute top-0 end-0 m-3 bg-white text-dark px-3 py-1 rounded-3 shadow fw-bold" style="font-size: 0.9rem; border: 1px solid #e2e8f0;">
+                                <i class="fas fa-star text-warning me-1"></i> {{ number_format($wisata->rating, 1) }}
+                            </div>
+                        </div>
+
+                        <div class="card-body d-flex flex-column p-4">
+                            <h4 class="card-title fw-bold mb-2 text-dark" style="font-size: 1.35rem; line-height: 1.3;">{{ $wisata->nama }}</h4>
+                            @if($wisata->category)
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-3 align-self-start text-capitalize px-3 py-2 rounded-2" style="font-size: 0.8rem; font-weight: 600;">
+                                    <i class="fas fa-tags me-1 small"></i> {{ $wisata->category->nama }}
+                                </span>
+                            @endif
+
+                            <p class="card-text text-secondary mb-4" style="font-size: 0.98rem; line-height: 1.7; text-align: justify;">
+                                {{ Str::limit($wisata->deskripsi, 115) }}
+                            </p>
+                            
+                            <div class="mt-auto pt-3 border-top border-light-subtle">
+                                <p class="text-muted mb-2 text-truncate fw-medium" style="font-size: 0.9rem;">
+                                    <i class="fas fa-map-marker-alt text-danger me-1"></i> {{ $wisata->lokasi }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center" style="font-size: 0.92rem;">
+                                    <span class="text-secondary fw-medium">
+                                        <i class="fas fa-clock text-primary me-1"></i> {{ $wisata->jam_buka }} - {{ $wisata->jam_tutup }}
+                                    </span>
+                                    <span class="text-danger fw-bold fs-5">
+                                        @if(is_numeric($wisata->tiket_masuk))
+                                            Rp {{ number_format($wisata->tiket_masuk, 0, ',', '.') }}
+                                        @else
+                                            {{ $wisata->tiket_masuk }}
+                                        @endif
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-white border-top-0 p-4 pt-0">
+                            <a href="{{ route('wisata.show', $wisata) }}" class="btn btn-outline-primary btn-md w-100 py-2 fw-bold rounded-3" style="font-size: 0.95rem;">
+                                <i class="fas fa-arrow-right-to-bracket me-1"></i> Buka Detail Wisata
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-12 py-5">
+                    <div class="alert alert-light text-center py-5 border rounded-4 shadow-sm" role="alert" style="background: #ffffff;">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3 opacity-50"></i> 
+                        <h4 class="fw-bold text-dark mb-1">Destinasi Tidak Ditemukan</h4>
+                        <p class="text-muted mb-0">Silakan coba cari dengan kata kunci lain.</p>
+                    </div>
+                </div>
+            @endforelse
+        </div>
+
+        <div class="d-flex justify-content-center mt-5">
+            {!! $wisatas->appends(request()->query())->links('pagination::bootstrap-5') !!}
+        </div>
+    </div>
+
+    <style>
+        .card-hover-animation { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .card-hover-animation:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(15, 42, 74, 0.12) !important; }
+        .img-zoom-effect { transition: transform 0.5s ease; }
+        .card-hover-animation:hover .img-zoom-effect { transform: scale(1.04); }
+        .suggestion-item { cursor: pointer; transition: background 0.2s ease; border: none; font-size: 0.95rem; color: #333; }
+        .suggestion-item:hover { background-color: #f0f6ff !important; color: #0d6efd; font-weight: 600; }
+    </style>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const suggestionBox = document.getElementById('suggestionBox');
+        const searchForm = document.getElementById('searchForm');
+
+        searchInput.addEventListener('input', function() {
+            const keyword = this.value.trim();
+            if (keyword.length < 1) {
+                suggestionBox.classList.add('d-none');
+                suggestionBox.innerHTML = '';
+                return;
+            }
+
+            fetch(`{{ route('wisata.suggestions') }}?search=${encodeURIComponent(keyword)}`)
+                .then(response => response.json())
+                .then(data => {
+                    suggestionBox.innerHTML = '';
+                    if (data.length > 0) {
+                        suggestionBox.classList.remove('d-none');
+                        data.forEach(item => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'list-group-item list-group-item-action suggestion-item py-2 px-3';
+                            button.innerHTML = `<i class="fas fa-map-pin text-muted me-2 small"></i>${item.nama}`;
+                            button.addEventListener('click', function() {
+                                searchInput.value = item.nama;
+                                suggestionBox.classList.add('d-none');
+                                searchForm.submit();
+                            });
+                            suggestionBox.appendChild(button);
+                        });
+                    } else {
+                        suggestionBox.classList.add('d-none');
+                    }
+                })
+                .catch(error => console.error('Error fetching suggestions:', error));
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== searchInput && !suggestionBox.contains(e.target)) {
+                suggestionBox.classList.add('d-none');
+            }
+        });
+    });
+</script>
+@endsection
